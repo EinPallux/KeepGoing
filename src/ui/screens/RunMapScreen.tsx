@@ -1,6 +1,8 @@
+import { computeBonusPlays } from '../../engine/charms';
 import { getGameModule } from '../../engine/games';
-import { floorTarget, isHouseFloor } from '../../engine/run';
+import { floorTarget, isHouseFloor, PLAYS_PER_FLOOR } from '../../engine/run';
 import { useRunStore } from '../../store/runStore';
+import { CharmShelf } from '../components/CharmShelf';
 
 export function RunMapScreen() {
   const run = useRunStore((s) => s.run);
@@ -12,6 +14,7 @@ export function RunMapScreen() {
   const target = floorTarget(run.floor);
   const houseFloor = isHouseFloor(run.floor);
   const offer = tableOffer();
+  const playsAvailable = PLAYS_PER_FLOOR + computeBonusPlays(run.charms);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 px-6">
@@ -23,9 +26,11 @@ export function RunMapScreen() {
           Reach <span className="text-amber-300">{target}</span> chips
         </h2>
         <p className="mt-1 text-white/60">
-          Bankroll: {run.bankroll} &middot; {run.playsTotal} plays available
+          Bankroll: {run.bankroll} &middot; {playsAvailable} plays available
         </p>
       </div>
+
+      <CharmShelf />
 
       <div className="grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
         {offer.map((tableId, i) => {

@@ -39,6 +39,16 @@ export interface RunState {
   /** Table chosen for the current floor; null until the player picks from the offer. */
   activeTableId: string | null;
   history: FloorRecord[];
+  /** Owned charm ids, max MAX_CHARM_SLOTS (see engine/charms). */
+  charms: string[];
+  /** Total wins this run; drives streak-based charms like Golden Goose. */
+  winCount: number;
+  /** Consecutive wins on the current floor; resets on a loss or bust. */
+  currentStreak: number;
+  /** Per-floor "already triggered" markers for once-per-floor charms (e.g. Rabbit's Foot), keyed by charm id -> floor number. */
+  floorFlags: Record<string, number>;
+  /** Shop rerolls used so far this floor; resets when the floor advances. */
+  shopRerolls: number;
 }
 
 export function isHouseFloor(floor: number): boolean {
@@ -61,6 +71,11 @@ export function startRun(seed: string): RunState {
     playsTotal: PLAYS_PER_FLOOR,
     activeTableId: null,
     history: [],
+    charms: [],
+    winCount: 0,
+    currentStreak: 0,
+    floorFlags: {},
+    shopRerolls: 0,
   };
 }
 
@@ -73,9 +88,15 @@ export function offerTables(pool: readonly string[], rng: Rng): string[] {
   return Array.from({ length: TABLES_OFFERED_PER_FLOOR }, () => rng.pick(pool));
 }
 
-export function chooseTable(run: RunState, tableId: string): RunState {
+/**
+ * Picks the table for the floor and locks in its plays budget. Called exactly
+ * once per floor (right after the shop), so `bonusPlays` reflects whatever
+ * charms the player owns at that moment - including ones just bought.
+ */
+export function chooseTable(run: RunState, tableId: string, bonusPlays = 0): RunState {
   if (run.status !== 'in-progress') return run;
-  return { ...run, activeTableId: tableId };
+  const playsTotal = PLAYS_PER_FLOOR + bonusPlays;
+  return { ...run, activeTableId: tableId, playsLeft: playsTotal, playsTotal };
 }
 
 /** Applies one resolved bet's outcome, then auto-resolves the floor if plays hit 0. */
@@ -164,8 +185,10 @@ function recordFloorEnd(run: RunState, opts: { cleared: boolean }): RunState {
     ...run,
     bankroll: endBankroll,
     floor: nextFloor,
-    playsLeft: run.playsTotal,
+    playsLeft: PLAYS_PER_FLOOR,
+    playsTotal: PLAYS_PER_FLOOR,
     activeTableId: null,
+    shopRerolls: 0,
     history,
   };
 }

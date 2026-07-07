@@ -5,11 +5,13 @@ import { MenuScreen } from './ui/screens/MenuScreen';
 import { RunMapScreen } from './ui/screens/RunMapScreen';
 import { GameTableScreen } from './ui/screens/GameTableScreen';
 import { FloorClearScreen } from './ui/screens/FloorClearScreen';
+import { ShopScreen } from './ui/screens/ShopScreen';
 import { SummaryScreen } from './ui/screens/SummaryScreen';
 
 function App() {
   const run = useRunStore((s) => s.run);
   const [floorClearRecord, setFloorClearRecord] = useState<FloorRecord | null>(null);
+  const [showShop, setShowShop] = useState(false);
   const prevHistoryLength = useRef(0);
 
   useEffect(() => {
@@ -31,8 +33,16 @@ function App() {
     screen = <SummaryScreen />;
   } else if (floorClearRecord) {
     screen = (
-      <FloorClearScreen record={floorClearRecord} onContinue={() => setFloorClearRecord(null)} />
+      <FloorClearScreen
+        record={floorClearRecord}
+        onContinue={() => {
+          setFloorClearRecord(null);
+          setShowShop(true);
+        }}
+      />
     );
+  } else if (showShop) {
+    screen = <ShopScreen onContinue={() => setShowShop(false)} />;
   } else if (!run.activeTableId) {
     screen = <RunMapScreen />;
   } else {

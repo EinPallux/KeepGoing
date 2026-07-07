@@ -25,6 +25,11 @@ describe('startRun', () => {
     expect(run.playsTotal).toBe(PLAYS_PER_FLOOR);
     expect(run.activeTableId).toBeNull();
     expect(run.history).toEqual([]);
+    expect(run.charms).toEqual([]);
+    expect(run.winCount).toBe(0);
+    expect(run.currentStreak).toBe(0);
+    expect(run.floorFlags).toEqual({});
+    expect(run.shopRerolls).toBe(0);
   });
 });
 
@@ -76,8 +81,14 @@ describe('offerTables', () => {
 
 describe('chooseTable', () => {
   it('sets the active table on an in-progress run', () => {
-    const run = chooseTable(startRun('seed'), 'coinflip');
-    expect(run.activeTableId).toBe('coinflip');
+    const run = chooseTable(startRun('seed'), 'dice');
+    expect(run.activeTableId).toBe('dice');
+  });
+
+  it('locks in the plays budget including any bonus plays', () => {
+    const run = chooseTable(startRun('seed'), 'dice', 2);
+    expect(run.playsLeft).toBe(PLAYS_PER_FLOOR + 2);
+    expect(run.playsTotal).toBe(PLAYS_PER_FLOOR + 2);
   });
 });
 

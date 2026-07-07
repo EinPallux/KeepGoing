@@ -1,6 +1,8 @@
 import { getGameModule } from '../../engine/games';
 import { floorTarget } from '../../engine/run';
 import { useRunStore } from '../../store/runStore';
+import { BigCounter } from '../components/BigCounter';
+import { CharmShelf } from '../components/CharmShelf';
 import { TABLE_COMPONENTS } from '../tables';
 
 export function GameTableScreen() {
@@ -21,7 +23,9 @@ export function GameTableScreen() {
         <span className="text-white/60">
           Floor {run.floor}/12 &middot; Target {target}
         </span>
-        <span className="font-mono text-lg text-white">{run.bankroll} chips</span>
+        <span className="text-lg text-white">
+          <BigCounter value={run.bankroll} /> chips
+        </span>
         <span className="text-white/60">{run.playsLeft} plays left</span>
         {canCashOut && (
           <button
@@ -32,6 +36,10 @@ export function GameTableScreen() {
             Cash Out Floor (+{run.playsLeft * 10} bonus)
           </button>
         )}
+      </div>
+
+      <div className="border-b border-white/5 px-6 py-2">
+        <CharmShelf />
       </div>
 
       <div className="flex flex-1 items-center justify-center p-6">

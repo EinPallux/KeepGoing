@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import type { FloorRecord } from '../../engine/run';
+import { fireFloorClear } from '../fx/confetti';
 
 interface FloorClearScreenProps {
   record: FloorRecord;
@@ -6,10 +9,21 @@ interface FloorClearScreenProps {
 }
 
 export function FloorClearScreen({ record, onContinue }: FloorClearScreenProps) {
+  useEffect(() => {
+    fireFloorClear();
+  }, []);
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-6 text-center">
       <p className="text-sm uppercase tracking-widest text-emerald-400">Floor {record.floor} Cleared</p>
-      <p className="text-5xl font-black text-amber-300">{record.endBankroll} chips</p>
+      <motion.p
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+        className="text-5xl font-black text-amber-300"
+      >
+        {record.endBankroll} chips
+      </motion.p>
 
       <div className="flex flex-col gap-1 text-white/70">
         <span>Target was {record.target}, banked {record.startBankroll}</span>
