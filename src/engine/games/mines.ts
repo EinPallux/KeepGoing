@@ -46,8 +46,8 @@ export const mines: GameModule<MinesState, MinesConfig> = {
   description: 'Reveal gems on a 5x5 grid. Every safe tile grows your multiplier - cash out before you hit a mine.',
   defaultConfig: DEFAULT_MINES_CONFIG,
 
-  initRound(bet, config, rng) {
-    const mineCount = clampMineCount(config.mineCount);
+  initRound(bet, config, rng, mods) {
+    const mineCount = clampMineCount(config.mineCount + mods.minesExtraMines);
     const minePositions = rng.shuffle(Array.from({ length: MINES_GRID_SIZE }, (_, i) => i)).slice(0, mineCount);
     return {
       bet,

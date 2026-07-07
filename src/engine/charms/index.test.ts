@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { startRun } from '../run';
+import { NEUTRAL_MODIFIERS } from '../games/types';
 import {
   applyCharmsToOutcome,
   computeBonusPlays,
@@ -14,7 +15,7 @@ function runWith(charms: string[], overrides: Partial<ReturnType<typeof startRun
 
 describe('computeModifiers', () => {
   it('is neutral with no relevant charms', () => {
-    expect(computeModifiers(['lucky-cent'])).toEqual({ diceOddsNudge: 0, minesGuaranteedFirstSafe: false });
+    expect(computeModifiers(['lucky-cent'])).toEqual(NEUTRAL_MODIFIERS);
   });
 
   it('applies loaded-die and steady-hands', () => {

@@ -45,7 +45,8 @@ export function RouletteTable() {
         )}
         {resolved && state && (
           <p className="text-sm text-white/60">
-            Landed on <span className="font-mono text-amber-300">{state.result}</span> (
+            Landed on{' '}
+            <span className="font-mono text-amber-300">{state.result === 37 ? '00' : state.result}</span> (
             {numberColor(state.result!)})
           </p>
         )}

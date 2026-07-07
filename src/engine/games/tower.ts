@@ -9,8 +9,8 @@ export const TOWER_DOORS = 3;
 export const TOWER_HOUSE_EDGE = 0.03;
 
 /** Fair multiplier (minus house edge) after climbing `rowsCleared` rows. */
-export function towerMultiplier(rowsCleared: number): number {
-  return (TOWER_DOORS / (TOWER_DOORS - 1)) ** rowsCleared * (1 - TOWER_HOUSE_EDGE);
+export function towerMultiplier(rowsCleared: number, houseEdge: number = TOWER_HOUSE_EDGE): number {
+  return (TOWER_DOORS / (TOWER_DOORS - 1)) ** rowsCleared * (1 - houseEdge);
 }
 
 export interface TowerState {
@@ -41,12 +41,13 @@ export const tower: GameModule<TowerState, undefined> = {
     return state.row > 0 ? [...doors, 'cashout'] : doors;
   },
 
-  step(state, action) {
+  step(state, action, _rng, mods) {
     if (state.resolved) return { state, events: [] };
+    const houseEdge = TOWER_HOUSE_EDGE + mods.houseEdgeBonus;
 
     if (action === 'cashout') {
       if (state.row === 0) throw new Error('Tower: cannot cash out before climbing a floor');
-      const payoutMultiplier = towerMultiplier(state.row);
+      const payoutMultiplier = towerMultiplier(state.row, houseEdge);
       return {
         state: { ...state, resolved: true, cashedOut: true, payoutMultiplier },
         events: [{ type: 'outcome', payoutMultiplier, meta: { rowsCleared: state.row } }],
@@ -67,7 +68,7 @@ export const tower: GameModule<TowerState, undefined> = {
 
     const row = state.row + 1;
     if (row === TOWER_ROWS) {
-      const payoutMultiplier = towerMultiplier(row);
+      const payoutMultiplier = towerMultiplier(row, houseEdge);
       return {
         state: { ...state, row, resolved: true, cashedOut: true, payoutMultiplier },
         events: [{ type: 'outcome', payoutMultiplier, meta: { rowsCleared: row, cleared: true } }],

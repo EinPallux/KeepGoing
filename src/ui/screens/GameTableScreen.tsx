@@ -9,12 +9,14 @@ export function GameTableScreen() {
   const run = useRunStore((s) => s.run);
   const canCashOut = useRunStore((s) => s.canCashOutFloor());
   const cashOutFloor = useRunStore((s) => s.cashOutFloor);
+  const activeTwist = useRunStore((s) => s.activeTwist);
 
   if (!run || !run.activeTableId) return null;
 
   const target = floorTarget(run.floor);
   const mod = getGameModule(run.activeTableId);
   const Table = TABLE_COMPONENTS[run.activeTableId];
+  const twist = activeTwist();
 
   return (
     <div className="flex h-full flex-col">
@@ -39,6 +41,13 @@ export function GameTableScreen() {
           </button>
         )}
       </div>
+
+      {twist && (
+        <div className="border-b border-rose-500/20 bg-rose-950/30 px-6 py-2 text-center text-sm">
+          <span className="font-bold uppercase tracking-wide text-rose-300">Twist: {twist.label}</span>{' '}
+          <span className="text-rose-100/70">{twist.description}</span>
+        </div>
+      )}
 
       <div className="border-b border-white/5 px-6 py-2">
         <CharmShelf />

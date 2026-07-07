@@ -51,14 +51,14 @@ export const keno: GameModule<KenoState, KenoConfig> = {
     return state.resolved ? [] : ['draw'];
   },
 
-  step(state, action, rng) {
+  step(state, action, rng, mods) {
     if (state.resolved) return { state, events: [] };
     if (action !== 'draw') throw new Error(`Keno received unknown action: ${action}`);
 
     const pool = Array.from({ length: KENO_POOL_SIZE }, (_, i) => i + 1);
     const drawn = rng.shuffle(pool).slice(0, KENO_DRAW_COUNT);
     const hits = state.picks.filter((p) => drawn.includes(p)).length;
-    const payoutMultiplier = KENO_PAYTABLE[hits] ?? 0;
+    const payoutMultiplier = (KENO_PAYTABLE[hits] ?? 0) * mods.kenoPayoutScale;
 
     const nextState: KenoState = { ...state, drawn, hits, resolved: true, payoutMultiplier };
 

@@ -83,3 +83,23 @@ describe('slots module', () => {
     expect(rtp).toBeLessThan(1.15);
   });
 });
+
+describe('evaluatePaylines with a void symbol', () => {
+  it('zeroes out the payout for a hit on the void symbol, but still reports the hit', () => {
+    const base = ['cherry', 'lemon', 'grape', 'bell', 'clover', 'star', 'diamond', 'seven', 'cherry'];
+    const grid = [...base];
+    for (const i of [0, 1, 2]) grid[i] = 'cherry';
+    const hits = evaluatePaylines(grid, 'cherry');
+    expect(hits).toHaveLength(1);
+    expect(hits[0].symbolId).toBe('cherry');
+    expect(hits[0].payout).toBe(0);
+  });
+
+  it('does not affect other symbols', () => {
+    const base = ['cherry', 'lemon', 'grape', 'bell', 'clover', 'star', 'diamond', 'seven', 'cherry'];
+    const grid = [...base];
+    for (const i of [0, 1, 2]) grid[i] = 'lemon';
+    const hits = evaluatePaylines(grid, 'cherry');
+    expect(hits[0].payout).toBeGreaterThan(0);
+  });
+});

@@ -82,3 +82,31 @@ describe('roulette module', () => {
     expect(() => roulette.step(state, 'nudge', rng, NEUTRAL_MODIFIERS)).toThrow();
   });
 });
+
+describe('Double Zero twist', () => {
+  it('adds a 38th pocket (index 37) that is green and loses every outside bet', () => {
+    let sawDoubleZero = false;
+    for (let i = 0; i < 500; i++) {
+      const rng = createRng(`double-zero-${i}`);
+      const state = roulette.initRound(10, { betType: 'color', value: 'red' }, rng, NEUTRAL_MODIFIERS);
+      const { state: resolved } = roulette.step(state, 'spin', rng, { ...NEUTRAL_MODIFIERS, rouletteDoubleZero: true });
+      expect(resolved.result).toBeGreaterThanOrEqual(0);
+      expect(resolved.result).toBeLessThanOrEqual(37);
+      if (resolved.result === 37) {
+        sawDoubleZero = true;
+        expect(numberColor(37)).toBe('green');
+        expect(resolved.payoutMultiplier).toBe(0);
+      }
+    }
+    expect(sawDoubleZero).toBe(true);
+  });
+
+  it('never appears without the twist active', () => {
+    for (let i = 0; i < 300; i++) {
+      const rng = createRng(`no-double-zero-${i}`);
+      const state = roulette.initRound(10, { betType: 'color', value: 'red' }, rng, NEUTRAL_MODIFIERS);
+      const { state: resolved } = roulette.step(state, 'spin', rng, NEUTRAL_MODIFIERS);
+      expect(resolved.result).toBeLessThanOrEqual(36);
+    }
+  });
+});

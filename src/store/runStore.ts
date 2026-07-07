@@ -12,6 +12,7 @@ import {
   cashOutFloor as engineCashOutFloor,
   canCashOutFloor as engineCanCashOutFloor,
   chooseTable,
+  isHouseFloor,
   offerTables,
   startRun,
   type RunState,
@@ -27,6 +28,7 @@ import {
   MAX_CHARM_SLOTS,
   minBetFraction,
 } from '../engine/charms';
+import { applyTwistToModifiers, pickTwistForFloor, type TwistDef } from '../engine/twists';
 
 interface CurrentRound {
   tableId: string;
@@ -50,6 +52,7 @@ interface RunStore {
 
   startNewRun: () => void;
   tableOffer: () => string[];
+  activeTwist: () => TwistDef | null;
   pickTable: (tableId: string) => void;
   setBet: (bet: number) => void;
   minBet: () => number;
@@ -74,6 +77,16 @@ function roundSeedKey(run: RunState, stepIndex: number): string {
   return `round-floor-${run.floor}-play-${playIndex}-step-${stepIndex}`;
 }
 
+function twistForRun(run: RunState): TwistDef | null {
+  return isHouseFloor(run.floor) ? pickTwistForFloor(run.seed, run.floor) : null;
+}
+
+function modifiersForRun(run: RunState) {
+  const mods = computeModifiers(run.charms);
+  const twist = twistForRun(run);
+  return twist ? applyTwistToModifiers(mods, twist) : mods;
+}
+
 export const useRunStore = create<RunStore>()(
   persist(
     (set, get) => ({
@@ -88,8 +101,15 @@ export const useRunStore = create<RunStore>()(
       tableOffer: () => {
         const { run } = get();
         if (!run) return [];
+        const twist = twistForRun(run);
+        if (twist) return [twist.gameId];
         const rng = createStream(run.seed, `offer-floor-${run.floor}`);
         return offerTables(ALL_TABLE_IDS, rng);
+      },
+
+      activeTwist: () => {
+        const { run } = get();
+        return run ? twistForRun(run) : null;
       },
 
       pickTable: (tableId) => {
@@ -113,7 +133,7 @@ export const useRunStore = create<RunStore>()(
         const module = getGameModule(run.activeTableId);
         const minBet = Math.max(1, Math.ceil(run.bankroll * minBetFraction(run.charms)));
         const clampedBet = Math.max(minBet, Math.min(bet, run.bankroll));
-        const mods = computeModifiers(run.charms);
+        const mods = modifiersForRun(run);
         const rng = createStream(run.seed, roundSeedKey(run, 0));
         const state = module.initRound(clampedBet, config ?? module.defaultConfig, rng, mods);
         set({
@@ -134,7 +154,7 @@ export const useRunStore = create<RunStore>()(
         const module = getGameModule(currentRound.tableId);
         const nextStepIndex = currentRound.stepIndex + 1;
         const rng = createStream(run.seed, roundSeedKey(run, nextStepIndex));
-        const mods = computeModifiers(run.charms);
+        const mods = modifiersForRun(run);
         const { state, events } = module.step(currentRound.state, actionId, rng, mods);
         const updatedRound: CurrentRound = { ...currentRound, state, stepIndex: nextStepIndex };
 

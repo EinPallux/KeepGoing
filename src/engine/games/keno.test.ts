@@ -56,4 +56,16 @@ describe('keno module', () => {
     expect(rtp).toBeGreaterThan(0.7);
     expect(rtp).toBeLessThan(1.2);
   });
+
+  it('a payout scale (e.g. a House Floor Twist) shrinks every payout proportionally', () => {
+    for (let i = 0; i < 200; i++) {
+      const rng = createRng(`keno-scale-${i}`);
+      const state = keno.initRound(10, { picks: [1, 2, 3, 4, 5] }, rng, NEUTRAL_MODIFIERS);
+      const { state: normal } = keno.step(state, 'draw', rng, NEUTRAL_MODIFIERS);
+      const rng2 = createRng(`keno-scale-${i}`);
+      const state2 = keno.initRound(10, { picks: [1, 2, 3, 4, 5] }, rng2, NEUTRAL_MODIFIERS);
+      const { state: halved } = keno.step(state2, 'draw', rng2, { ...NEUTRAL_MODIFIERS, kenoPayoutScale: 0.5 });
+      expect(halved.payoutMultiplier).toBeCloseTo(normal.payoutMultiplier * 0.5);
+    }
+  });
 });

@@ -30,8 +30,13 @@ export interface RouletteState {
   payoutMultiplier: number;
 }
 
+/** True for 0, and for 37 which represents the "00" pocket added by the Double Zero twist. */
+function isZeroLike(n: number): boolean {
+  return n === 0 || n === 37;
+}
+
 export function numberColor(n: number): RouletteColor | 'green' {
-  if (n === 0) return 'green';
+  if (isZeroLike(n)) return 'green';
   return RED_NUMBERS.has(n) ? 'red' : 'black';
 }
 
@@ -42,10 +47,10 @@ function payoutFor(config: RouletteConfig, result: number): number {
     case 'color':
       return numberColor(result) === config.value ? 2 : 0;
     case 'parity':
-      if (result === 0) return 0;
+      if (isZeroLike(result)) return 0;
       return (result % 2 === 0 ? 'even' : 'odd') === config.value ? 2 : 0;
     case 'dozen': {
-      if (result === 0) return 0;
+      if (isZeroLike(result)) return 0;
       const dozen = Math.ceil(result / 12);
       return dozen === config.value ? 3 : 0;
     }
@@ -75,11 +80,12 @@ export const roulette: GameModule<RouletteState, RouletteConfig> = {
     return state.resolved ? [] : ['spin'];
   },
 
-  step(state, action, rng) {
+  step(state, action, rng, mods) {
     if (state.resolved) return { state, events: [] };
     if (action !== 'spin') throw new Error(`Roulette received unknown action: ${action}`);
 
-    const result = rng.int(0, ROULETTE_HOUSE_NUMBERS - 1);
+    const totalNumbers = ROULETTE_HOUSE_NUMBERS + (mods.rouletteDoubleZero ? 1 : 0);
+    const result = rng.int(0, totalNumbers - 1);
     const payoutMultiplier = payoutFor({ betType: state.betType, value: state.value }, result);
 
     const nextState: RouletteState = { ...state, result, resolved: true, payoutMultiplier };

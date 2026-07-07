@@ -132,4 +132,34 @@ describe('blackjack module', () => {
     expect(again).toBe(state);
     expect(events).toEqual([]);
   });
+
+  it('House Rules twist turns a push into a loss', () => {
+    let found = false;
+    for (let i = 0; i < 300 && !found; i++) {
+      const rng = createRng(`house-rules-${i}`);
+      const state = blackjack.initRound(10, undefined, rng, { ...NEUTRAL_MODIFIERS, blackjackDealerWinsPush: true });
+      if (state.resolved && state.outcome === 'loss' && isBlackjack(state.dealerCards) && isBlackjack(state.playerCards)) {
+        found = true;
+        expect(state.payoutMultiplier).toBe(0);
+      }
+    }
+    // A double-blackjack push is rare; also verify the stand path directly settles pushes as losses.
+    for (let i = 0; i < 300; i++) {
+      const rng = createRng(`house-rules-stand-${i}`);
+      let state = blackjack.initRound(10, undefined, rng, NEUTRAL_MODIFIERS);
+      if (state.resolved) continue;
+      const { state: normalStand } = blackjack.step(state, 'stand', rng, NEUTRAL_MODIFIERS);
+      if (normalStand.outcome === 'push') {
+        const rng2 = createRng(`house-rules-stand-${i}`);
+        const state2 = blackjack.initRound(10, undefined, rng2, NEUTRAL_MODIFIERS);
+        const { state: twistedStand } = blackjack.step(state2, 'stand', rng2, {
+          ...NEUTRAL_MODIFIERS,
+          blackjackDealerWinsPush: true,
+        });
+        expect(twistedStand.outcome).toBe('loss');
+        expect(twistedStand.payoutMultiplier).toBe(0);
+        return;
+      }
+    }
+  });
 });

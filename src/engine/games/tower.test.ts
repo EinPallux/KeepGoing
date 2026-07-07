@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng';
 import { NEUTRAL_MODIFIERS } from './types';
-import { tower, towerMultiplier, TOWER_ROWS, TOWER_DOORS } from './tower';
+import { tower, towerMultiplier, TOWER_ROWS, TOWER_DOORS, TOWER_HOUSE_EDGE } from './tower';
 
 describe('towerMultiplier', () => {
   it('grows with each cleared row', () => {
@@ -84,5 +84,15 @@ describe('tower module', () => {
     const state = tower.initRound(10, undefined, rng, NEUTRAL_MODIFIERS);
     expect(() => tower.step(state, 'door:99', rng, NEUTRAL_MODIFIERS)).toThrow();
     expect(() => tower.step(state, 'nudge', rng, NEUTRAL_MODIFIERS)).toThrow();
+  });
+
+  it('a house edge bonus (e.g. a House Floor Twist) lowers the cashout multiplier', () => {
+    const rng = createRng('tower-edge-bonus');
+    const state = tower.initRound(10, undefined, rng, NEUTRAL_MODIFIERS);
+    const safeDoor = Array.from({ length: TOWER_DOORS }, (_, i) => i).find((i) => i !== state.trapDoors[0])!;
+    const { state: afterClimb } = tower.step(state, `door:${safeDoor}`, rng, NEUTRAL_MODIFIERS);
+    const { state: twisted } = tower.step(afterClimb, 'cashout', rng, { ...NEUTRAL_MODIFIERS, houseEdgeBonus: 0.2 });
+    expect(twisted.payoutMultiplier).toBeCloseTo(towerMultiplier(1, TOWER_HOUSE_EDGE + 0.2));
+    expect(twisted.payoutMultiplier).toBeLessThan(towerMultiplier(1));
   });
 });

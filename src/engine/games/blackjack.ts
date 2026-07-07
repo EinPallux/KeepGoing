@@ -86,11 +86,11 @@ function runDealerAndSettle(state: BlackjackState): BlackjackState {
 }
 
 /** Compares final hands after the dealer has played out. Caller guarantees the player hasn't bust. */
-function settleOutcome(state: BlackjackState): BlackjackOutcome {
+function settleOutcome(state: BlackjackState, dealerWinsPush: boolean): BlackjackOutcome {
   const playerValue = handValue(state.playerCards);
   const dealerValue = handValue(state.dealerCards);
   if (dealerValue > 21 || playerValue > dealerValue) return 'win';
-  if (playerValue === dealerValue) return 'push';
+  if (playerValue === dealerValue) return dealerWinsPush ? 'loss' : 'push';
   return 'loss';
 }
 
@@ -100,7 +100,7 @@ export const blackjack: GameModule<BlackjackState, undefined> = {
   description: 'Single deck, dealer stands on 17. Blackjack pays 3:2. Hit, stand, or double down.',
   defaultConfig: undefined,
 
-  initRound(bet, _config, rng) {
+  initRound(bet, _config, rng, mods) {
     const deck = rng.shuffle(Array.from({ length: DECK_SIZE }, (_, i) => i));
     const playerCards = [deck[0], deck[2]];
     const dealerCards = [deck[1], deck[3]];
@@ -121,7 +121,9 @@ export const blackjack: GameModule<BlackjackState, undefined> = {
     const playerBJ = isBlackjack(playerCards);
     const dealerBJ = isBlackjack(dealerCards);
     if (playerBJ || dealerBJ) {
-      const outcome: BlackjackOutcome = playerBJ && dealerBJ ? 'push' : playerBJ ? 'blackjack' : 'loss';
+      const bothBJ = playerBJ && dealerBJ;
+      const outcome: BlackjackOutcome =
+        bothBJ ? (mods.blackjackDealerWinsPush ? 'loss' : 'push') : playerBJ ? 'blackjack' : 'loss';
       const payoutMultiplier = resolveMultiplier(outcome, false);
       return { ...base, phase: 'done', resolved: true, outcome, payoutMultiplier };
     }
@@ -136,12 +138,12 @@ export const blackjack: GameModule<BlackjackState, undefined> = {
     return acts;
   },
 
-  step(state, action, _rng) {
+  step(state, action, _rng, mods) {
     if (state.resolved) return { state, events: [] };
 
     if (action === 'stand') {
       const afterDealer = runDealerAndSettle(state);
-      return finish(afterDealer, settleOutcome(afterDealer));
+      return finish(afterDealer, settleOutcome(afterDealer, mods.blackjackDealerWinsPush));
     }
 
     if (action === 'double') {
@@ -151,7 +153,7 @@ export const blackjack: GameModule<BlackjackState, undefined> = {
       const doubled = { ...state, playerCards, position: state.position + 1, doubled: true };
       if (handValue(playerCards) > 21) return finish(doubled, 'bust');
       const afterDealer = runDealerAndSettle(doubled);
-      return finish(afterDealer, settleOutcome(afterDealer));
+      return finish(afterDealer, settleOutcome(afterDealer, mods.blackjackDealerWinsPush));
     }
 
     if (action === 'hit') {
@@ -162,7 +164,7 @@ export const blackjack: GameModule<BlackjackState, undefined> = {
       if (value > 21) return finish(nextState, 'bust');
       if (value === 21) {
         const afterDealer = runDealerAndSettle(nextState);
-        return finish(afterDealer, settleOutcome(afterDealer));
+        return finish(afterDealer, settleOutcome(afterDealer, mods.blackjackDealerWinsPush));
       }
       return { state: nextState, events: [] };
     }

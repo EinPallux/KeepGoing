@@ -38,8 +38,12 @@ export function diceWinChance(direction: DiceDirection, threshold: number): numb
 }
 
 /** Fair-ish payout multiplier (house edge baked in) for a winning call. */
-export function dicePayoutMultiplier(direction: DiceDirection, threshold: number): number {
-  return (1 - DICE_HOUSE_EDGE) / diceWinChance(direction, threshold);
+export function dicePayoutMultiplier(
+  direction: DiceDirection,
+  threshold: number,
+  houseEdge: number = DICE_HOUSE_EDGE,
+): number {
+  return (1 - houseEdge) / diceWinChance(direction, threshold);
 }
 
 export const dice: GameModule<DiceState, DiceConfig> = {
@@ -77,7 +81,8 @@ export const dice: GameModule<DiceState, DiceConfig> = {
     }
 
     const won = state.direction === 'under' ? roll < state.threshold : roll > state.threshold;
-    const payoutMultiplier = won ? dicePayoutMultiplier(state.direction, state.threshold) : 0;
+    const houseEdge = DICE_HOUSE_EDGE + mods.houseEdgeBonus;
+    const payoutMultiplier = won ? dicePayoutMultiplier(state.direction, state.threshold, houseEdge) : 0;
 
     const nextState: DiceState = { ...state, roll, resolved: true, won, payoutMultiplier };
 

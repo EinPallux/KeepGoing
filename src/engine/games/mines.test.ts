@@ -129,4 +129,11 @@ describe('mines module', () => {
     expect(() => mines.step(next, `reveal:${safeTile}`, rng, NEUTRAL_MODIFIERS)).toThrow();
     expect(() => mines.step(state, 'reveal:99', rng, NEUTRAL_MODIFIERS)).toThrow();
   });
+
+  it('minesExtraMines (e.g. a House Floor Twist) adds to the configured mine count', () => {
+    const rng = createRng('mines-extra');
+    const state = mines.initRound(10, { mineCount: 5 }, rng, { ...NEUTRAL_MODIFIERS, minesExtraMines: 2 });
+    expect(state.mineCount).toBe(7);
+    expect(state.minePositions).toHaveLength(7);
+  });
 });

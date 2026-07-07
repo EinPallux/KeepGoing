@@ -92,4 +92,15 @@ describe('dice module', () => {
     expect(rtp).toBeGreaterThan(1 - DICE_HOUSE_EDGE - 0.05);
     expect(rtp).toBeLessThan(1 - DICE_HOUSE_EDGE + 0.05);
   });
+
+  it('a house edge bonus (e.g. a House Floor Twist) lowers the payout on a win', () => {
+    const rng = createRng('dice-edge-bonus');
+    const config = { direction: 'under' as const, threshold: 50 };
+    const state = dice.initRound(10, config, rng, NEUTRAL_MODIFIERS);
+    const { state: resolved } = dice.step(state, 'roll', rng, { ...NEUTRAL_MODIFIERS, houseEdgeBonus: 0.1 });
+    if (resolved.won) {
+      expect(resolved.payoutMultiplier).toBeCloseTo(dicePayoutMultiplier('under', 50, DICE_HOUSE_EDGE + 0.1));
+      expect(resolved.payoutMultiplier).toBeLessThan(dicePayoutMultiplier('under', 50));
+    }
+  });
 });

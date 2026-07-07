@@ -54,13 +54,13 @@ export interface PaylineHit {
   payout: number;
 }
 
-export function evaluatePaylines(grid: string[]): PaylineHit[] {
+export function evaluatePaylines(grid: string[], voidSymbolId: string | null = null): PaylineHit[] {
   const hits: PaylineHit[] = [];
   for (const line of PAYLINES) {
     const [a, b, c] = line;
     if (grid[a] === grid[b] && grid[b] === grid[c]) {
       const symbol = SYMBOLS.find((s) => s.id === grid[a]);
-      if (symbol) hits.push({ line, symbolId: symbol.id, payout: symbol.payout });
+      if (symbol) hits.push({ line, symbolId: symbol.id, payout: symbol.id === voidSymbolId ? 0 : symbol.payout });
     }
   }
   return hits;
@@ -88,12 +88,12 @@ export const slots: GameModule<SlotsState, undefined> = {
     return state.resolved ? [] : ['spin'];
   },
 
-  step(state, action, rng) {
+  step(state, action, rng, mods) {
     if (state.resolved) return { state, events: [] };
     if (action !== 'spin') throw new Error(`Slots received unknown action: ${action}`);
 
     const grid = Array.from({ length: GRID_SIZE }, () => weightedSymbol(rng).id);
-    const hits = evaluatePaylines(grid);
+    const hits = evaluatePaylines(grid, mods.slotsVoidSymbolId);
     const payoutMultiplier = hits.reduce((sum, h) => sum + h.payout, 0);
 
     const nextState: SlotsState = { ...state, grid, resolved: true, payoutMultiplier, hits };

@@ -108,4 +108,20 @@ describe('hilo module', () => {
     const state = hilo.initRound(10, undefined, rng, NEUTRAL_MODIFIERS);
     expect(() => hilo.step(state, 'sideways', rng, NEUTRAL_MODIFIERS)).toThrow();
   });
+
+  it('a house edge bonus (e.g. a House Floor Twist) shrinks the chain multiplier growth', () => {
+    for (let i = 0; i < 100; i++) {
+      const rng = createRng(`hilo-edge-bonus-${i}`);
+      const state = hilo.initRound(10, undefined, rng, NEUTRAL_MODIFIERS);
+      const currentRank = cardRank(state.deck[state.position]);
+      const nextRank = cardRank(state.deck[state.position + 1]);
+      if (nextRank === currentRank) continue;
+      const goodGuess = nextRank > currentRank ? 'higher' : 'lower';
+      const { state: normal } = hilo.step(state, goodGuess, rng, NEUTRAL_MODIFIERS);
+      const { state: twisted } = hilo.step(state, goodGuess, rng, { ...NEUTRAL_MODIFIERS, houseEdgeBonus: 0.15 });
+      expect(twisted.chainMultiplier).toBeLessThan(normal.chainMultiplier);
+      return;
+    }
+    throw new Error('never found a non-tied first card in 100 seeds');
+  });
 });

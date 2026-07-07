@@ -72,7 +72,7 @@ export const hilo: GameModule<HiloState, undefined> = {
     return acts;
   },
 
-  step(state, action, _rng, _mods) {
+  step(state, action, _rng, mods) {
     if (state.resolved) return { state, events: [] };
 
     if (action === 'cashout') {
@@ -107,7 +107,8 @@ export const hilo: GameModule<HiloState, undefined> = {
     const lowerCount = pool.filter((c) => cardRank(c) < currentRank).length;
     const winCount = action === 'higher' ? higherCount : lowerCount;
     const chance = winCount / pool.length;
-    const roundMultiplier = (1 - HILO_HOUSE_EDGE) / chance;
+    const houseEdge = HILO_HOUSE_EDGE + mods.houseEdgeBonus;
+    const roundMultiplier = (1 - houseEdge) / chance;
     const chainMultiplier = state.chainMultiplier * roundMultiplier;
 
     const deckExhausted = nextIndex === DECK_SIZE - 1;
