@@ -4,7 +4,7 @@ A single-player **gambling roguelite** web game — all fake money, zero stakes,
 
 Beat escalating bankroll targets across 12 casino floors, pick your tables (Slots, Plinko, Crash, Mines, Blackjack and more), stack game-warping Charms, and manage a Corruption meter that makes the run more generous *and* more hostile the deeper you go.
 
-**Status:** M1 vertical slice — 4 of 12 tables are playable (Dice, Mines, Hilo, Slots), with 10 Charms, a shop, and a first juice pass (animated bankroll counter, win/floor-clear confetti). The remaining 8 tables (Plinko, Crash, Chicken, Roulette, Blackjack, Keno, Tower, Wheel), House Floor twists, and the Corruption/event systems are still to come.
+**Status:** M2 (games) — all 12 casino tables are playable (Slots, Plinko, Crash, Chicken, Dice, Roulette, Blackjack, Keno, Hilo, Mines, Tower, Wheel), with 10 Charms, a shop, and a first juice pass (animated bankroll counter, win/floor-clear confetti). Still to come: House Floor twists, consumables & jinxes, more Charms (25 total), the Corruption system, and random events.
 
 📋 **Read the full game design & execution plan: [PLAN.md](./PLAN.md)**
 

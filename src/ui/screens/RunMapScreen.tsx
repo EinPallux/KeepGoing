@@ -39,6 +39,8 @@ export function RunMapScreen() {
             <button
               key={`${tableId}-${i}`}
               type="button"
+              data-testid="table-offer-card"
+              data-table-id={tableId}
               onClick={() => pickTable(tableId)}
               className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-5 text-left transition hover:scale-[1.02] hover:border-pink-400/50 hover:bg-white/10"
             >

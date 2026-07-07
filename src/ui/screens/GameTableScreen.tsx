@@ -19,7 +19,9 @@ export function GameTableScreen() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-6 py-4 text-sm">
-        <span className="font-bold text-amber-300">{mod.label}</span>
+        <span data-testid="table-label" data-table-id={mod.id} className="font-bold text-amber-300">
+          {mod.label}
+        </span>
         <span className="text-white/60">
           Floor {run.floor}/12 &middot; Target {target}
         </span>
