@@ -19,6 +19,9 @@ const TABLE_EMOJI: Record<string, string> = {
   wheel: '🎡',
   crash: '🚀',
   plinko: '🎯',
+  coinflip: '🪙',
+  videopoker: '🎴',
+  scratch: '🎟️',
 };
 
 export function RunMapScreen() {

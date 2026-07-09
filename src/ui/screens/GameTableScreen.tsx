@@ -90,7 +90,7 @@ export function GameTableScreen() {
         <CharmShelf />
       </div>
 
-      <div className="flex flex-1 items-center justify-center p-6">
+      <div className="flex flex-1 items-center justify-center px-4 py-4">
         {Table ? <Table /> : <p className="text-white/50">No UI registered for {mod.id} yet.</p>}
       </div>
     </div>

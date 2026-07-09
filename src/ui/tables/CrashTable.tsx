@@ -10,8 +10,8 @@ import { playClimb, playExplosion, playCashout, playWhoosh } from '../fx/sound';
 import { screenShake } from '../fx/confetti';
 
 const PRESETS = [1.5, 2, 3, 5, 10];
-const W = 540;
-const H = 300;
+const W = 760;
+const H = 420;
 
 function climbDuration(endpoint: number): number {
   return Math.min(2600, Math.max(900, 700 + 650 * Math.log2(Math.max(2, endpoint))));
@@ -132,7 +132,7 @@ export function CrashTable() {
 
       // multiplier text
       ctx.fillStyle = 'rgba(255,255,255,0.96)';
-      ctx.font = '900 52px system-ui';
+      ctx.font = '900 72px system-ui';
       ctx.fillText(`${mHead.toFixed(2)}×`, W / 2, 60);
 
       if (elapsed > lastTone + 70) {

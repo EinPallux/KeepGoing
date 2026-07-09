@@ -138,7 +138,7 @@ export function KenoTable() {
                 type="button"
                 disabled={resolved}
                 onClick={() => toggle(n)}
-                className={`kg-tnum flex h-9 w-9 items-center justify-center rounded-md text-xs font-bold transition-colors ${cls} ${
+                className={`kg-tnum flex h-12 w-12 items-center justify-center rounded-md text-sm font-bold transition-colors ${cls} ${
                   resolved ? 'cursor-default' : ''
                 }`}
               >

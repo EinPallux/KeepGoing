@@ -10,9 +10,12 @@ import { chicken } from './chicken';
 import { wheel } from './wheel';
 import { crash } from './crash';
 import { plinko } from './plinko';
+import { coinflip } from './coinflip';
+import { videopoker } from './videopoker';
+import { scratch } from './scratch';
 import type { GameModule } from './types';
 
-/** All 12 tables, keyed by id. See PLAN.md section 3. */
+/** All casino tables, keyed by id. See PLAN.md section 3. */
 export const GAME_MODULES: Record<string, GameModule<unknown, unknown>> = {
   [dice.id]: dice as GameModule<unknown, unknown>,
   [mines.id]: mines as GameModule<unknown, unknown>,
@@ -26,6 +29,9 @@ export const GAME_MODULES: Record<string, GameModule<unknown, unknown>> = {
   [wheel.id]: wheel as GameModule<unknown, unknown>,
   [crash.id]: crash as GameModule<unknown, unknown>,
   [plinko.id]: plinko as GameModule<unknown, unknown>,
+  [coinflip.id]: coinflip as GameModule<unknown, unknown>,
+  [videopoker.id]: videopoker as GameModule<unknown, unknown>,
+  [scratch.id]: scratch as GameModule<unknown, unknown>,
 };
 
 export const ALL_TABLE_IDS = Object.keys(GAME_MODULES);
@@ -37,4 +43,20 @@ export function getGameModule(id: string): GameModule<unknown, unknown> {
 }
 
 export * from './types';
-export { dice, mines, hilo, slots, roulette, blackjack, keno, tower, chicken, wheel, crash, plinko };
+export {
+  dice,
+  mines,
+  hilo,
+  slots,
+  roulette,
+  blackjack,
+  keno,
+  tower,
+  chicken,
+  wheel,
+  crash,
+  plinko,
+  coinflip,
+  videopoker,
+  scratch,
+};

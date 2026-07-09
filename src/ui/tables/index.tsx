@@ -11,8 +11,11 @@ import { ChickenTable } from './ChickenTable';
 import { WheelTable } from './WheelTable';
 import { CrashTable } from './CrashTable';
 import { PlinkoTable } from './PlinkoTable';
+import { CoinFlipTable } from './CoinFlipTable';
+import { VideoPokerTable } from './VideoPokerTable';
+import { ScratchTable } from './ScratchTable';
 
-/** Maps a table id to the React component that renders it. All 12 tables from PLAN.md section 3. */
+/** Maps a table id to the React component that renders it. */
 export const TABLE_COMPONENTS: Record<string, ComponentType> = {
   dice: DiceTable,
   mines: MinesTable,
@@ -26,4 +29,7 @@ export const TABLE_COMPONENTS: Record<string, ComponentType> = {
   wheel: WheelTable,
   crash: CrashTable,
   plinko: PlinkoTable,
+  coinflip: CoinFlipTable,
+  videopoker: VideoPokerTable,
+  scratch: ScratchTable,
 };

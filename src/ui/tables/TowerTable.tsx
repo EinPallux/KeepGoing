@@ -172,7 +172,7 @@ export function TowerTable() {
                         onClick={() => climb(d)}
                         whileHover={clickable ? { scale: 1.08, y: -2 } : undefined}
                         whileTap={clickable ? { scale: 0.9 } : undefined}
-                        className={`flex h-12 flex-1 items-center justify-center rounded-lg transition ${skin} ${
+                        className={`flex h-16 flex-1 items-center justify-center rounded-lg text-xl transition ${skin} ${
                           clickable ? 'cursor-pointer' : 'cursor-default'
                         }`}
                         style={{ perspective: 500 }}
