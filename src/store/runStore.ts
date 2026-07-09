@@ -49,6 +49,12 @@ interface RunStore {
   run: RunState | null;
   currentRound: CurrentRound | null;
   bet: number;
+  /** True while a table is animating a just-resolved play; gates the header
+   *  spoiler and the floor-clear transition until the reveal finishes. */
+  revealing: boolean;
+  /** Bankroll to *display* during a reveal (the pre-play value), so the header
+   *  odometer doesn't spoil the outcome before the animation lands. */
+  heldBankroll: number | null;
 
   startNewRun: () => void;
   tableOffer: () => string[];
@@ -58,6 +64,8 @@ interface RunStore {
   minBet: () => number;
   startRound: (config?: unknown) => void;
   submitAction: (actionId: ActionId) => void;
+  /** Called by a table once its reveal animation has played out. Idempotent. */
+  endReveal: () => void;
   cashOutFloor: () => void;
   canCashOutFloor: () => boolean;
 
@@ -89,13 +97,39 @@ function modifiersForRun(run: RunState) {
 
 export const useRunStore = create<RunStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      // Applies a resolved play's outcome (charms, bankroll, streaks, floor
+      // resolution) and opens the reveal gate. Shared by submitAction and by
+      // startRound for games that can resolve at deal (e.g. a natural blackjack).
+      const applyResolvedOutcome = (run: RunState, round: CurrentRound, rawPayoutMultiplier: number) => {
+        const charmResult = applyCharmsToOutcome(run, rawPayoutMultiplier);
+        const runWithCharmBookkeeping: RunState = {
+          ...run,
+          winCount: charmResult.winCount,
+          currentStreak: charmResult.currentStreak,
+          floorFlags: charmResult.floorFlags,
+        };
+        const nextRun = applyOutcome(runWithCharmBookkeeping, round.bet, charmResult.payoutMultiplier);
+        const resultDelta = calcPlayoutDelta(round.bet, charmResult.payoutMultiplier);
+        set({
+          run: nextRun,
+          // Hold the header at the pre-play bankroll and gate the floor-clear
+          // transition until the table's reveal animation calls endReveal().
+          revealing: true,
+          heldBankroll: run.bankroll,
+          currentRound: { ...round, resultDelta, finalPayoutMultiplier: charmResult.payoutMultiplier },
+        });
+      };
+
+      return {
       run: null,
       currentRound: null,
       bet: DEFAULT_BET,
+      revealing: false,
+      heldBankroll: null,
 
       startNewRun: () => {
-        set({ run: startRun(randomSeed()), currentRound: null, bet: DEFAULT_BET });
+        set({ run: startRun(randomSeed()), currentRound: null, bet: DEFAULT_BET, revealing: false, heldBankroll: null });
       },
 
       tableOffer: () => {
@@ -116,7 +150,7 @@ export const useRunStore = create<RunStore>()(
         const { run } = get();
         if (!run) return;
         const bonusPlays = computeBonusPlays(run.charms);
-        set({ run: chooseTable(run, tableId, bonusPlays), currentRound: null });
+        set({ run: chooseTable(run, tableId, bonusPlays), currentRound: null, revealing: false, heldBankroll: null });
       },
 
       setBet: (bet) => set({ bet: Math.max(1, Math.floor(bet)) }),
@@ -136,16 +170,21 @@ export const useRunStore = create<RunStore>()(
         const mods = modifiersForRun(run);
         const rng = createStream(run.seed, roundSeedKey(run, 0));
         const state = module.initRound(clampedBet, config ?? module.defaultConfig, rng, mods);
-        set({
-          currentRound: {
-            tableId: run.activeTableId,
-            state,
-            bet: clampedBet,
-            stepIndex: 0,
-            resultDelta: null,
-            finalPayoutMultiplier: null,
-          },
-        });
+        const round: CurrentRound = {
+          tableId: run.activeTableId,
+          state,
+          bet: clampedBet,
+          stepIndex: 0,
+          resultDelta: null,
+          finalPayoutMultiplier: null,
+        };
+        if (module.isResolved(state)) {
+          // A few games can resolve on the deal itself (a natural blackjack).
+          // Score it now rather than leaving a consequence-free resolved round.
+          applyResolvedOutcome(run, round, (state as { payoutMultiplier: number }).payoutMultiplier);
+        } else {
+          set({ revealing: false, heldBankroll: null, currentRound: round });
+        }
       },
 
       submitAction: (actionId) => {
@@ -169,25 +208,18 @@ export const useRunStore = create<RunStore>()(
           return;
         }
 
-        const charmResult = applyCharmsToOutcome(run, outcome.payoutMultiplier);
-        const runWithCharmBookkeeping: RunState = {
-          ...run,
-          winCount: charmResult.winCount,
-          currentStreak: charmResult.currentStreak,
-          floorFlags: charmResult.floorFlags,
-        };
-        const nextRun = applyOutcome(runWithCharmBookkeeping, currentRound.bet, charmResult.payoutMultiplier);
-        const resultDelta = calcPlayoutDelta(currentRound.bet, charmResult.payoutMultiplier);
-        set({
-          run: nextRun,
-          currentRound: { ...updatedRound, resultDelta, finalPayoutMultiplier: charmResult.payoutMultiplier },
-        });
+        applyResolvedOutcome(run, updatedRound, outcome.payoutMultiplier);
+      },
+
+      endReveal: () => {
+        if (!get().revealing) return;
+        set({ revealing: false, heldBankroll: null });
       },
 
       cashOutFloor: () => {
         const { run } = get();
         if (!run || !engineCanCashOutFloor(run)) return;
-        set({ run: engineCashOutFloor(run), currentRound: null });
+        set({ run: engineCashOutFloor(run), currentRound: null, revealing: false, heldBankroll: null });
       },
 
       canCashOutFloor: () => {
@@ -239,8 +271,9 @@ export const useRunStore = create<RunStore>()(
         set({ run: { ...run, bankroll: run.bankroll - cost, shopRerolls: run.shopRerolls + 1 } });
       },
 
-      abandonRun: () => set({ run: null, currentRound: null, bet: DEFAULT_BET }),
-    }),
+      abandonRun: () => set({ run: null, currentRound: null, bet: DEFAULT_BET, revealing: false, heldBankroll: null }),
+      };
+    },
     {
       name: 'keepgoing-run',
       version: 1,

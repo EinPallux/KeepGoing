@@ -6,7 +6,7 @@ interface BigCounterProps {
   className?: string;
 }
 
-/** Animated, odometer-style bankroll display - counts up/down and flashes on change. */
+/** Odometer-style bankroll display - counts up/down and flashes green/red on change. */
 export function BigCounter({ value, className = '' }: BigCounterProps) {
   const motionValue = useMotionValue(value);
   const rounded = useTransform(motionValue, (v) => Math.round(v).toLocaleString());
@@ -18,8 +18,8 @@ export function BigCounter({ value, className = '' }: BigCounterProps) {
     if (value === prev) return;
 
     setFlash(value > prev ? 'up' : 'down');
-    const controls = animate(motionValue, value, { duration: 0.6, ease: 'easeOut' });
-    const timeout = setTimeout(() => setFlash(null), 500);
+    const controls = animate(motionValue, value, { duration: 0.7, ease: 'easeOut' });
+    const timeout = setTimeout(() => setFlash(null), 650);
     prevValueRef.current = value;
 
     return () => {
@@ -30,10 +30,14 @@ export function BigCounter({ value, className = '' }: BigCounterProps) {
 
   return (
     <motion.span
-      animate={{ scale: flash ? 1.12 : 1 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-      className={`inline-block font-mono tabular-nums transition-colors ${
-        flash === 'up' ? 'text-emerald-300' : flash === 'down' ? 'text-rose-400' : ''
+      animate={{ scale: flash ? 1.14 : 1 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 14 }}
+      className={`kg-tnum inline-block font-mono transition-colors ${
+        flash === 'up'
+          ? 'text-emerald-300 [text-shadow:0_0_18px_rgba(52,224,161,0.6)]'
+          : flash === 'down'
+            ? 'text-rose-400 [text-shadow:0_0_18px_rgba(255,92,122,0.5)]'
+            : ''
       } ${className}`}
     >
       {rounded}

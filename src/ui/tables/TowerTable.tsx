@@ -1,8 +1,19 @@
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRunStore } from '../../store/runStore';
 import type { TowerState } from '../../engine/games/tower';
-import { towerMultiplier, TOWER_DOORS, TOWER_ROWS } from '../../engine/games/tower';
+import { TOWER_ROWS, TOWER_DOORS, towerMultiplier } from '../../engine/games/tower';
 import { BetSlider } from '../components/BetSlider';
 import { PlayResultBanner } from '../components/PlayResultBanner';
+import { ActionButton } from '../components/ActionButton';
+import { MultiplierBadge } from '../components/MultiplierBadge';
+import { TableFrame } from '../components/TableFrame';
+import { useReveal } from '../fx/useReveal';
+import { playPing, playCoin, playExplosion, playCashout, playSelect } from '../fx/sound';
+import { screenShake } from '../fx/confetti';
+
+const DOOR_IDS = Array.from({ length: TOWER_DOORS }, (_, i) => i);
+const ROW_IDS = Array.from({ length: TOWER_ROWS }, (_, i) => i);
 
 export function TowerTable() {
   const run = useRunStore((s) => s.run);
@@ -12,104 +23,202 @@ export function TowerTable() {
   const startRound = useRunStore((s) => s.startRound);
   const submitAction = useRunStore((s) => s.submitAction);
 
-  if (!run) return null;
+  // Track which safe door the player opened on each cleared row (engine doesn't store it).
+  const [chosen, setChosen] = useState<number[]>([]);
 
   const state = currentRound?.state as TowerState | undefined;
   const resolved = state?.resolved ?? false;
+  const busted = state?.busted ?? false;
+  const playIndex = run ? run.playsTotal - run.playsLeft : 0;
+  const revealKey = run ? `${run.floor}:${playIndex}` : 'idle';
+  const { done } = useReveal(resolved, revealKey, busted ? 1300 : 1000);
 
-  if (!currentRound || !state || resolved) {
+  if (!run) return null;
+
+  // --- Setup / result screen ---
+  if (!state || (resolved && done)) {
     return (
       <div className="flex flex-col items-center gap-6">
-        {resolved && state && currentRound && currentRound.resultDelta !== null && (
-          <PlayResultBanner
-            key={currentRound.stepIndex}
-            delta={currentRound.resultDelta}
-            payoutMultiplier={currentRound.finalPayoutMultiplier ?? 0}
-          />
-        )}
-        {resolved && state && (
+        <div className="h-20">
+          {resolved && done && currentRound && currentRound.resultDelta !== null && (
+            <PlayResultBanner
+              key={revealKey}
+              delta={currentRound.resultDelta}
+              payoutMultiplier={currentRound.finalPayoutMultiplier ?? 0}
+            />
+          )}
+        </div>
+        {resolved && done && state && (
           <p className="text-sm text-white/60">
-            {state.busted ? `Hit a trap on floor ${state.row + 1}` : `Cashed out on floor ${state.row}`}
+            {state.busted
+              ? `💥 A trap door on floor ${state.row + 1} — climbed ${state.row} floor${state.row === 1 ? '' : 's'}`
+              : `🏆 Escaped after ${state.row} floor${state.row === 1 ? '' : 's'}`}
           </p>
         )}
 
+        <p className="max-w-xs text-center text-xs text-white/45">
+          Climb {TOWER_ROWS} floors, {TOWER_DOORS} doors each. One is a trap. Cash out any time.
+        </p>
+
         <BetSlider bet={bet} max={run.bankroll} onChange={setBet} />
-        <button
-          type="button"
-          onClick={() => startRound()}
+        <ActionButton
+          onClick={() => {
+            setChosen([]);
+            playSelect();
+            startRound();
+          }}
           disabled={run.bankroll <= 0}
-          className="rounded-full bg-gradient-to-r from-pink-500 to-amber-400 px-8 py-3 font-bold text-black shadow-lg shadow-pink-500/30 transition hover:scale-105 disabled:opacity-40"
+          sheen
+          silent
         >
-          {resolved ? 'Next Play' : 'Place Bet'}
-        </button>
+          {resolved ? 'Play Again' : 'Place Bet'}
+        </ActionButton>
       </div>
     );
   }
 
+  // --- Interactive tower (in play or bust reveal) ---
   const liveMultiplier = state.row > 0 ? towerMultiplier(state.row) : 1;
+  const showTrap = (r: number) => resolved && (busted || r < state.row);
+
+  const climb = (door: number) => {
+    const fromRow = state.row;
+    submitAction(`door:${door}`);
+    const st = useRunStore.getState().currentRound?.state as TowerState | undefined;
+    if (!st) return;
+    if (st.busted) {
+      playExplosion();
+      screenShake('heavy');
+    } else {
+      // Safe: remember the chosen door and celebrate the ascent.
+      setChosen((prev) => {
+        const next = [...prev];
+        next[fromRow] = door;
+        return next;
+      });
+      if (st.resolved) playCashout(); // reached the top floor
+      else {
+        playPing(st.row / TOWER_ROWS);
+        playCoin();
+      }
+    }
+  };
+
+  const cashOut = () => {
+    submitAction('cashout');
+    playCashout();
+  };
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <p className="text-white/70">
-        Floor {state.row}/{TOWER_ROWS} &middot; {currentRound.bet} chips
-        {state.row > 0 && (
-          <>
-            {' '}
-            &middot; current <span className="font-mono text-amber-300">{liveMultiplier.toFixed(2)}x</span>
-          </>
-        )}
-      </p>
+      <MultiplierBadge
+        value={liveMultiplier}
+        tone={busted ? 'loss' : state.row > 0 ? 'win' : 'idle'}
+        size="lg"
+        label={busted ? 'busted' : 'climbing'}
+      />
 
-      <div className="flex flex-col-reverse gap-2">
-        {Array.from({ length: TOWER_ROWS }, (_, row) => {
-          const isCurrent = row === state.row;
-          const isCleared = row < state.row;
+      <TableFrame surface="glass" className="w-full max-w-sm">
+        <div className="flex w-full flex-col-reverse gap-1.5">
+          {ROW_IDS.map((r) => {
+            const isActive = r === state.row && !resolved;
+            const cleared = r < state.row;
+            const locked = r > state.row && !resolved;
+            const rowMult = towerMultiplier(r + 1);
+            return (
+              <motion.div
+                key={r}
+                animate={{
+                  opacity: locked ? 0.35 : 1,
+                  scale: isActive ? 1 : 0.98,
+                }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${
+                  isActive ? 'bg-cyan-400/10 ring-1 ring-cyan-300/40 kg-anim-pulse-glow' : ''
+                }`}
+              >
+                <span
+                  className={`kg-tnum w-14 shrink-0 text-right text-[11px] font-bold ${
+                    cleared ? 'text-emerald-300' : isActive ? 'text-cyan-200' : 'text-white/35'
+                  }`}
+                >
+                  {rowMult.toFixed(2)}×
+                </span>
+                <div className="flex flex-1 justify-around gap-1.5">
+                  {DOOR_IDS.map((d) => {
+                    const isChosen = cleared && chosen[r] === d;
+                    const isTrap = state.trapDoors[r] === d;
+                    const trapVisible = showTrap(r) && isTrap;
+                    const clickable = isActive;
 
-          return (
-            <div key={row} className="flex items-center gap-2">
-              <span className="w-6 text-right text-xs text-white/30">{row + 1}</span>
-              {Array.from({ length: TOWER_DOORS }, (_, doorIdx) => {
-                if (isCurrent) {
-                  return (
-                    <button
-                      key={doorIdx}
-                      type="button"
-                      onClick={() => submitAction(`door:${doorIdx}`)}
-                      className="flex h-10 w-14 items-center justify-center rounded-md bg-white/10 text-lg transition hover:scale-105 hover:bg-white/20"
-                    >
-                      🚪
-                    </button>
-                  );
-                }
-                if (isCleared) {
-                  const wasTrap = state.trapDoors[row] === doorIdx;
-                  return (
-                    <div
-                      key={doorIdx}
-                      className={`flex h-10 w-14 items-center justify-center rounded-md text-lg ${
-                        wasTrap ? 'bg-rose-900/40' : 'bg-emerald-600/50'
-                      }`}
-                    >
-                      {wasTrap ? '💣' : '✓'}
-                    </div>
-                  );
-                }
-                return <div key={doorIdx} className="h-10 w-14 rounded-md bg-white/5" />;
-              })}
-            </div>
-          );
-        })}
+                    let face = <span className="text-2xl opacity-70">🚪</span>;
+                    let skin = 'bg-white/5';
+                    if (isChosen) {
+                      face = <span className="text-2xl">✅</span>;
+                      skin = 'bg-emerald-500/30 ring-1 ring-emerald-300/50';
+                    } else if (trapVisible) {
+                      face = <span className="text-2xl">💣</span>;
+                      skin = 'bg-rose-600/70 ring-1 ring-rose-300/40';
+                    } else if (isActive) {
+                      face = <span className="text-2xl">🚪</span>;
+                      skin = 'bg-cyan-400/20 ring-1 ring-cyan-300/60 hover:bg-cyan-400/35';
+                    }
+
+                    return (
+                      <motion.button
+                        key={d}
+                        type="button"
+                        disabled={!clickable}
+                        onClick={() => climb(d)}
+                        whileHover={clickable ? { scale: 1.08, y: -2 } : undefined}
+                        whileTap={clickable ? { scale: 0.9 } : undefined}
+                        className={`flex h-12 flex-1 items-center justify-center rounded-lg transition ${skin} ${
+                          clickable ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                        style={{ perspective: 500 }}
+                      >
+                        <motion.span
+                          initial={false}
+                          animate={{ rotateY: trapVisible || isChosen ? [0, 180, 360] : 0 }}
+                          transition={{ duration: 0.4, delay: trapVisible ? r * 0.05 : 0 }}
+                          style={{ display: 'inline-flex' }}
+                        >
+                          {face}
+                        </motion.span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </TableFrame>
+
+      <div className="h-12">
+        <AnimatePresence>
+          {state.row > 0 && !resolved && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <ActionButton onClick={cashOut} variant="cash" silent>
+                Cash Out {liveMultiplier.toFixed(2)}×
+              </ActionButton>
+            </motion.div>
+          )}
+          {state.row === 0 && !resolved && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="pt-3 text-xs text-white/45"
+            >
+              Pick a door to start climbing ↑
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
-
-      {state.row > 0 && (
-        <button
-          type="button"
-          onClick={() => submitAction('cashout')}
-          className="rounded-full bg-emerald-500 px-8 py-3 font-bold text-black transition hover:scale-105"
-        >
-          Cash Out {liveMultiplier.toFixed(2)}x
-        </button>
-      )}
     </div>
   );
 }
