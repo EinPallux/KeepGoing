@@ -16,13 +16,13 @@ const BET_TYPES: { id: RouletteBetType; label: string }[] = [
   { id: 'straight', label: 'Straight Up' },
 ];
 
-const SIZE = 360;
+const SIZE = 500;
 const DUR = 3200;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const R_OUTER = 168;
-const R_INNER = 96;
-const R_NUM = 132;
+const R_OUTER = 234;
+const R_INNER = 134;
+const R_NUM = 184;
 
 const POCKET_FILL: Record<string, string> = { red: '#e5405e', black: '#1c2030', green: '#0f9d58' };
 

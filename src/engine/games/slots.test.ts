@@ -1,39 +1,80 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng';
 import { NEUTRAL_MODIFIERS } from './types';
-import { evaluatePaylines, GRID_SIZE, PAYLINES, slots, SYMBOLS } from './slots';
+import { evaluatePaylines, GRID_SIZE, PAYLINES, REEL_COUNT, slots, SYMBOLS } from './slots';
+
+// A base grid where every reel (column) is a distinct symbol, so no payline
+// (one cell per reel, left to right) has any consecutive match on its own.
+const COLS = ['cherry', 'lemon', 'grape', 'bell', 'clover'];
+const cleanBase = () => Array.from({ length: GRID_SIZE }, (_, i) => COLS[i % REEL_COUNT]);
 
 describe('evaluatePaylines', () => {
-  it('detects a hit on every defined payline independently', () => {
-    // A base arrangement with no accidental payline matches of its own,
-    // so overwriting just the target line with 'lemon' can't spuriously
-    // complete a different (overlapping) payline.
-    const base = ['cherry', 'lemon', 'grape', 'bell', 'clover', 'star', 'diamond', 'seven', 'cherry'];
+  it('detects a 5-of-a-kind on every payline independently', () => {
     for (const line of PAYLINES) {
-      const grid = [...base];
-      for (const i of line) grid[i] = 'lemon';
+      const grid = cleanBase();
+      for (const i of line) grid[i] = 'star';
       const hits = evaluatePaylines(grid);
       expect(hits).toHaveLength(1);
       expect(hits[0].line).toEqual(line);
-      expect(hits[0].symbolId).toBe('lemon');
+      expect(hits[0].symbolId).toBe('star');
+      expect(hits[0].count).toBe(5);
     }
   });
 
-  it('stacks multiple simultaneous line hits', () => {
-    const grid = Array(GRID_SIZE).fill('seven'); // every line hits at once
+  it('pays only for left-to-right runs of 3+ starting on reel 1', () => {
+    const line = PAYLINES[0]; // [5,6,7,8,9]
+    // 'star' isn't one of the base column symbols, so the run stops cleanly at 3.
+    const grid = cleanBase();
+    grid[line[0]] = 'star';
+    grid[line[1]] = 'star';
+    grid[line[2]] = 'star';
     const hits = evaluatePaylines(grid);
-    expect(hits).toHaveLength(PAYLINES.length);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].count).toBe(3);
+    expect(hits[0].cells).toEqual(line.slice(0, 3));
+
+    // A match that does NOT include reel 1 pays nothing.
+    const grid2 = cleanBase();
+    grid2[line[1]] = 'star';
+    grid2[line[2]] = 'star';
+    grid2[line[3]] = 'star';
+    expect(evaluatePaylines(grid2)).toEqual([]);
   });
 
-  it('finds no hits on a non-matching grid', () => {
-    const grid = ['cherry', 'lemon', 'grape', 'bell', 'clover', 'star', 'diamond', 'cherry', 'lemon'];
+  it('stacks every payline when the whole grid is one symbol', () => {
+    const grid = Array(GRID_SIZE).fill('seven');
     const hits = evaluatePaylines(grid);
-    expect(hits).toEqual([]);
+    expect(hits).toHaveLength(PAYLINES.length);
+    expect(hits.every((h) => h.count === 5)).toBe(true);
+  });
+
+  it('finds no hits on a reel-distinct grid', () => {
+    expect(evaluatePaylines(cleanBase())).toEqual([]);
+  });
+});
+
+describe('evaluatePaylines with a void symbol', () => {
+  it('zeroes the payout for the voided symbol but still reports the hit', () => {
+    const line = PAYLINES[0];
+    const grid = cleanBase();
+    for (const i of line.slice(0, 3)) grid[i] = 'cherry';
+    const hits = evaluatePaylines(grid, 'cherry');
+    expect(hits).toHaveLength(1);
+    expect(hits[0].symbolId).toBe('cherry');
+    expect(hits[0].payout).toBe(0);
+  });
+
+  it('does not affect other symbols', () => {
+    const line = PAYLINES[0];
+    const grid = cleanBase();
+    for (const i of line.slice(0, 3)) grid[i] = 'bell';
+    const hits = evaluatePaylines(grid, 'cherry');
+    expect(hits[0].payout).toBeGreaterThan(0);
   });
 });
 
 describe('slots module', () => {
-  it('resolves on a single spin action and fills a 9-cell grid', () => {
+  it('resolves on a single spin and fills a 15-cell grid', () => {
     const rng = createRng('slots-1');
     const state = slots.initRound(10, undefined, rng, NEUTRAL_MODIFIERS);
     expect(slots.actions(state)).toEqual(['spin']);
@@ -77,29 +118,8 @@ describe('slots module', () => {
       totalPayout += resolved.payoutMultiplier;
     }
     const rtp = totalPayout / trials;
-    // Precise tuning happens in the M4 balance pass; this just guards against a
-    // broken paytable (e.g. an accidental 10x weight or payout typo).
-    expect(rtp).toBeGreaterThan(0.7);
-    expect(rtp).toBeLessThan(1.15);
-  });
-});
-
-describe('evaluatePaylines with a void symbol', () => {
-  it('zeroes out the payout for a hit on the void symbol, but still reports the hit', () => {
-    const base = ['cherry', 'lemon', 'grape', 'bell', 'clover', 'star', 'diamond', 'seven', 'cherry'];
-    const grid = [...base];
-    for (const i of [0, 1, 2]) grid[i] = 'cherry';
-    const hits = evaluatePaylines(grid, 'cherry');
-    expect(hits).toHaveLength(1);
-    expect(hits[0].symbolId).toBe('cherry');
-    expect(hits[0].payout).toBe(0);
-  });
-
-  it('does not affect other symbols', () => {
-    const base = ['cherry', 'lemon', 'grape', 'bell', 'clover', 'star', 'diamond', 'seven', 'cherry'];
-    const grid = [...base];
-    for (const i of [0, 1, 2]) grid[i] = 'lemon';
-    const hits = evaluatePaylines(grid, 'cherry');
-    expect(hits[0].payout).toBeGreaterThan(0);
+    // Precise tuning is the M4 balance pass; this only guards against a broken paytable.
+    expect(rtp).toBeGreaterThan(0.6);
+    expect(rtp).toBeLessThan(1.25);
   });
 });

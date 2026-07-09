@@ -11,9 +11,9 @@ import { useReveal } from '../fx/useReveal';
 import { playWhoosh, playTick, playCoin } from '../fx/sound';
 
 const RISKS: WheelRisk[] = ['low', 'medium', 'high'];
-const SIZE = 360;
+const SIZE = 500;
 const CENTER = SIZE / 2;
-const R = 165;
+const R = 232;
 const SEG = (Math.PI * 2) / WHEEL_SEGMENT_COUNT;
 const TURNS = 6;
 const DURATION = 2800;

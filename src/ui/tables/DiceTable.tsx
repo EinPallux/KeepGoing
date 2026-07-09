@@ -115,20 +115,20 @@ export function DiceTable() {
         )}
       </div>
 
-      <TableFrame surface="glass" className="w-full max-w-xl flex-col gap-7">
+      <TableFrame surface="glass" className="w-full max-w-2xl flex-col gap-8">
         {/* Tumbling roll readout */}
         <motion.div
           key={`num-${revealKey}`}
           animate={settled ? { scale: [1, 1.25, 1] } : { scale: 1 }}
           transition={{ duration: 0.4 }}
-          className={`kg-tnum text-7xl font-black tabular-nums ${numberColor}`}
+          className={`kg-tnum text-8xl font-black tabular-nums ${numberColor}`}
           style={settled ? { filter: 'drop-shadow(0 0 18px currentColor)' } : undefined}
         >
           {String(shown).padStart(2, '0')}
         </motion.div>
 
         {/* The 0..100 track */}
-        <div className="relative h-16 w-full">
+        <div className="relative h-20 w-full">
           <div className="absolute inset-0 overflow-hidden rounded-2xl border border-white/10 bg-rose-950/50 shadow-inner">
             {/* win zone */}
             <div

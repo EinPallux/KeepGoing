@@ -142,7 +142,7 @@ export function MinesTable() {
               type="button"
               disabled={isRevealed || resolved}
               onClick={() => reveal(i)}
-              className="relative h-14 w-14"
+              className="relative h-16 w-16"
               style={{ perspective: 500 }}
             >
               <motion.div

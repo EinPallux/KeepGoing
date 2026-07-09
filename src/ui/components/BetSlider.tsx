@@ -27,7 +27,7 @@ export function BetSlider({ bet, max, onChange, disabled, min = 1 }: BetSliderPr
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-2">
+    <div className="flex w-full max-w-md flex-col gap-2">
       <div className="flex items-center justify-between text-sm text-white/60">
         <span className="uppercase tracking-wide">Bet</span>
         <span className="kg-tnum flex items-center gap-1 font-bold text-amber-300">

@@ -9,11 +9,11 @@ import { useReveal } from '../fx/useReveal';
 import { playPing, playWhoosh, playCoin } from '../fx/sound';
 
 const RISKS: PlinkoRisk[] = ['low', 'medium', 'high'];
-const W = 440;
-const H = 452;
-const TOP = 34;
-const BUCKET_H = 48;
-const MARGIN = 30;
+const W = 580;
+const H = 600;
+const TOP = 40;
+const BUCKET_H = 58;
+const MARGIN = 36;
 const SPACING = (W - 2 * MARGIN) / PLINKO_ROWS;
 const ROW_GAP = (H - TOP - BUCKET_H) / PLINKO_ROWS;
 const CENTER = W / 2;

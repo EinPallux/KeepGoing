@@ -127,8 +127,8 @@ export function ChickenTable() {
       />
 
       {/* The road */}
-      <div className="w-full max-w-2xl overflow-x-auto rounded-3xl bg-emerald-900/40 p-2 ring-1 ring-emerald-500/20">
-        <div className="flex items-stretch gap-1 rounded-2xl bg-neutral-900 p-2">
+      <div className="w-full max-w-4xl overflow-x-auto rounded-3xl bg-emerald-900/40 p-3 ring-1 ring-emerald-500/20">
+        <div className="flex items-stretch gap-1.5 rounded-2xl bg-neutral-900 p-2">
           {/* Start curb */}
           <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-emerald-700/50 py-3">
             {lane === 0 && !busted && (
@@ -153,7 +153,7 @@ export function ChickenTable() {
             return (
               <div
                 key={i}
-                className={`relative flex w-14 shrink-0 flex-col items-center justify-between overflow-hidden rounded-xl py-2 ${
+                className={`relative flex w-[4.5rem] shrink-0 flex-col items-center justify-between overflow-hidden rounded-xl py-3 ${
                   crossed ? 'bg-neutral-800' : 'bg-neutral-950'
                 }`}
                 style={{
@@ -181,9 +181,9 @@ export function ChickenTable() {
                   </motion.span>
                 )}
 
-                <span className="relative z-10 text-[9px] font-black text-amber-300/80">{targetMult.toFixed(2)}×</span>
+                <span className="relative z-10 text-[11px] font-black text-amber-300/80">{targetMult.toFixed(2)}×</span>
 
-                <div className="relative z-10 flex h-8 items-center justify-center">
+                <div className="relative z-10 flex h-12 items-center justify-center text-xl">
                   <AnimatePresence>
                     {hasChicken && (
                       <motion.span

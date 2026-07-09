@@ -11,9 +11,9 @@ interface CardVisualProps {
 }
 
 const SIZE: Record<string, string> = {
-  sm: 'h-20 w-14 text-lg',
-  md: 'h-28 w-20 text-2xl',
-  lg: 'h-36 w-24 text-3xl',
+  sm: 'h-24 w-16 text-xl',
+  md: 'h-36 w-24 text-3xl',
+  lg: 'h-48 w-32 text-5xl',
 };
 
 /** Static face-up card. */
@@ -26,9 +26,9 @@ export function CardFace({ cardIndex, size = 'md' }: CardVisualProps) {
     <div
       className={`relative flex flex-col items-center justify-center rounded-xl border border-black/10 bg-gradient-to-br from-white to-slate-100 shadow-[0_10px_24px_rgba(0,0,0,0.5)] ${SIZE[size]}`}
     >
-      <span className={`absolute left-1.5 top-1 text-xs font-black ${color}`}>{rank}</span>
+      <span className={`absolute left-2 top-1 text-base font-black leading-none ${color}`}>{rank}</span>
       <span className={`font-black ${color}`}>{SUIT_GLYPHS[suit]}</span>
-      <span className={`absolute bottom-1 right-1.5 rotate-180 text-xs font-black ${color}`}>{rank}</span>
+      <span className={`absolute bottom-1 right-2 rotate-180 text-base font-black leading-none ${color}`}>{rank}</span>
     </div>
   );
 }
