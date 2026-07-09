@@ -69,6 +69,9 @@ export function CoinFlipTable() {
   const [rotation, setRotation] = useState(0);
   const [flipping, setFlipping] = useState(false);
   const [glow, setGlow] = useState<Glow>(null);
+  // Snapshot of the pre-flip display values, shown while the coin spins so the
+  // resolved streak/multiplier/trail don't appear before the coin lands.
+  const [frozen, setFrozen] = useState<Pick<CoinFlipState, 'streak' | 'chainMultiplier' | 'busted' | 'history'> | null>(null);
   const timers = useRef<number[]>([]);
 
   const state = currentRound?.state as CoinFlipState | undefined;
@@ -133,13 +136,21 @@ export function CoinFlipTable() {
   }
 
   // ---------- Interactive board (in play or reveal) ----------
-  const flipsLeft = COINFLIP_MAX_FLIPS - streak;
+  // While the coin spins the store already holds the resolved state, so show the
+  // frozen pre-flip values until it lands - otherwise the streak/multiplier/trail
+  // would spoil the outcome before the coin does.
+  const dStreak = flipping && frozen ? frozen.streak : streak;
+  const dMult = flipping && frozen ? frozen.chainMultiplier : chainMultiplier;
+  const dBusted = flipping && frozen ? frozen.busted : busted;
+  const dHistory = flipping && frozen ? frozen.history : state.history;
+  const flipsLeft = COINFLIP_MAX_FLIPS - dStreak;
   const busy = flipping || resolved;
 
   const flip = (call: CoinSide) => {
     if (busy) return;
     setFlipping(true);
     setGlow(null);
+    setFrozen({ streak, chainMultiplier, busted, history: state.history });
     playWhoosh();
     submitAction(call);
 
@@ -187,10 +198,10 @@ export function CoinFlipTable() {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <motion.div key={streak} animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 0.35 }}>
+      <motion.div key={dStreak} animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 0.35 }}>
         <MultiplierBadge
-          value={chainMultiplier}
-          tone={busted ? 'loss' : streak > 0 ? 'win' : 'idle'}
+          value={dMult}
+          tone={dBusted ? 'loss' : dStreak > 0 ? 'win' : 'idle'}
           size="xl"
           label="streak ×"
         />
@@ -212,19 +223,19 @@ export function CoinFlipTable() {
       </div>
 
       <p className="text-xs font-bold uppercase tracking-widest text-white/45">
-        {resolved
-          ? busted
-            ? 'Busted'
-            : 'Cashed out'
-          : flipping
-            ? 'Flipping…'
+        {flipping
+          ? 'Flipping…'
+          : resolved
+            ? busted
+              ? 'Busted'
+              : 'Cashed out'
             : `${flipsLeft} flip${flipsLeft === 1 ? '' : 's'} left · call it`}
       </p>
 
       {/* Past-flips trail */}
       <div className="flex min-h-[2.75rem] max-w-full flex-wrap items-center justify-center gap-2">
         <AnimatePresence>
-          {state.history.map((rec, i) => (
+          {dHistory.map((rec, i) => (
             <TrailCoin key={i} result={rec.result} won={rec.won} index={i} />
           ))}
         </AnimatePresence>
